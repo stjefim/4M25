@@ -55,7 +55,8 @@ class Drone2D(gym.Env):
 
         self.drone.ApplyForce(force=self.drone.GetWorldVector([0., float(action[0])]), point=self.drone.GetWorldPoint([-0.2, 0.]), wake=True)
         self.drone.ApplyForce(force=self.drone.GetWorldVector([0., float(action[1])]), point=self.drone.GetWorldPoint([0.2, 0.]), wake=True)
-        self.drone.ApplyForceToCenter(force=-1 * np.sign(self.drone.linearVelocity) * np.square(self.drone.linearVelocity), wake=True)
+        self.drone.ApplyForceToCenter(force=-0.5 * np.sign(self.drone.linearVelocity) * np.square(self.drone.linearVelocity), wake=True)
+        self.drone.ApplyTorque(-0.01 * self.drone.angularVelocity, wake=True)
         self.world.Step(self.TIME_STEP, 10, 10)
 
         if self.render_mode == "human":
@@ -128,14 +129,41 @@ def action_from_keyboard(keys):
     return action
 
 
+class Joystick:
+    def __init__(self):
+        pygame.joystick.init()
+        self.joystick = pygame.joystick.Joystick(0)
+        self.joystick.init()
+
+    def get_action(self):
+        total = 10 * (self.joystick.get_axis(2) + 1) / 2
+        diff = 0.05 * self.joystick.get_axis(0)
+        return [(total + diff) / 2, (total - diff) / 2]
+
+    def get_action2(self):
+        left = 5 * (self.joystick.get_axis(2) + 1) / 2
+        right = 5 * (self.joystick.get_axis(1) + 1) / 2
+
+        return [left, right]
+
+
 def main():
+    JOYSTICK = False
+    KEYBOARD = True
+
     env = Drone2D(render_mode="human")
     obs, info = env.reset(seed=0)
 
+    if JOYSTICK:
+        joystick = Joystick()
+
     for _ in range(1000):
-        # action = [9.81*4*0.4*0.1, 9.81*4*0.4*0.1]
+        action = [0, 0]
         keys = pygame.key.get_pressed()
-        action = action_from_keyboard(keys)
+        if KEYBOARD:
+            action = action_from_keyboard(keys)
+        if JOYSTICK:
+            action = joystick.get_action()
 
         obs, reward, terminated, truncated, info = env.step(action)
 
