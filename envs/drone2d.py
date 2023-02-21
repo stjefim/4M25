@@ -2,7 +2,6 @@ import numpy as np
 import pygame
 import gymnasium as gym
 import Box2D
-import keyboard
 
 
 # pixels per meter
@@ -141,7 +140,7 @@ def main():
         obs, reward, terminated, truncated, info = env.step(action)
 
         if terminated or truncated or keys[pygame.K_q]:
-             obs, info = env.reset()
+            obs, info = env.reset()
 
     env.close()
 
