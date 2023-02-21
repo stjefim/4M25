@@ -2,6 +2,7 @@ import numpy as np
 import pygame
 import gymnasium as gym
 import Box2D
+import keyboard
 
 
 # pixels per meter
@@ -14,7 +15,7 @@ MAX_SPEED = 100
 MAX_ANGULAR_SPEED = 100
 GRAVITY = -9.81
 
-DRONE_DEF = Box2D.b2FixtureDef(density=1.0, shape=Box2D.b2PolygonShape(box=(0.2, 0.05)))
+DRONE_DEF = Box2D.b2FixtureDef(density=4.0, friction=0.1, restitution=0.0, shape=Box2D.b2PolygonShape(box=(0.2, 0.05)))
 GROUND_DEF = Box2D.b2FixtureDef(shape=Box2D.b2PolygonShape(box=(2.5, 0.1)))
 
 
@@ -55,6 +56,7 @@ class Drone2D(gym.Env):
 
         self.drone.ApplyForce(force=self.drone.GetWorldVector([0., float(action[0])]), point=self.drone.GetWorldPoint([-0.2, 0.]), wake=True)
         self.drone.ApplyForce(force=self.drone.GetWorldVector([0., float(action[1])]), point=self.drone.GetWorldPoint([0.2, 0.]), wake=True)
+        self.drone.ApplyForceToCenter(force=-1 * np.sign(self.drone.linearVelocity) * np.square(self.drone.linearVelocity), wake=True)
         self.world.Step(self.TIME_STEP, 10, 10)
 
         if self.render_mode == "human":
@@ -116,15 +118,30 @@ class Drone2D(gym.Env):
         self.world.DestroyBody(self.drone)
 
 
+def action_from_keyboard(keys):
+    action = [0, 0]
+    if keys[pygame.K_w]:
+        action = [1.6, 1.6]
+    if keys[pygame.K_a]:
+        action = [1.6, 1.61]
+    if keys[pygame.K_d]:
+        action = [1.61, 1.6]
+    return action
+
+
 def main():
     env = Drone2D(render_mode="human")
+    obs, info = env.reset(seed=0)
 
     for _ in range(1000):
-        action = [0.4, 0.3]
+        # action = [9.81*4*0.4*0.1, 9.81*4*0.4*0.1]
+        keys = pygame.key.get_pressed()
+        action = action_from_keyboard(keys)
+
         obs, reward, terminated, truncated, info = env.step(action)
 
-        if terminated or truncated:
-            obs, info = env.reset()
+        if terminated or truncated or keys[pygame.K_q]:
+             obs, info = env.reset()
 
     env.close()
 
