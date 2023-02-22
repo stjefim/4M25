@@ -38,6 +38,7 @@ class Drone2D(gym.Env):
         self.world = Box2D.b2World(gravity=(0, GRAVITY))
         self.world.CreateStaticBody(position=(2.5, 0.1), fixtures=GROUND_DEF)
         self.drone = self.world.CreateDynamicBody(position=(2.5, 0.25), fixtures=DRONE_DEF)
+        self.target = np.array([1., 3.])
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -52,7 +53,7 @@ class Drone2D(gym.Env):
 
     def step(self, action):
         terminated = False
-        reward = -100*((self.drone.position[0] - 2.5 - 1) ** 2 + (self.drone.position[1] - 0.25 - 3) ** 2)
+        reward = -100*((self.drone.position[0] - 2.5 - self.target[0]) ** 2 + (self.drone.position[1] - 0.25 - self.target[1]) ** 2)
 
         self.drone.ApplyForce(force=self.drone.GetWorldVector([0., float(action[0])]), point=self.drone.GetWorldPoint([-0.2, 0.]), wake=True)
         self.drone.ApplyForce(force=self.drone.GetWorldVector([0., float(action[1])]), point=self.drone.GetWorldPoint([0.2, 0.]), wake=True)
@@ -91,6 +92,8 @@ class Drone2D(gym.Env):
                 vertices = np.array([body.transform * v for v in shape.vertices])
                 pygame.draw.polygon(canvas, (100, 100, 100), self._coord_transform(vertices))
         self.world.Step(self.TIME_STEP, 10, 10)
+
+        pygame.draw.circle(canvas, (0, 200, 0), np.round(self._coord_transform(self.target + [2.5, 0.25])).astype(int), 10)
 
         if self.render_mode == "human":
             self.window.blit(canvas, canvas.get_rect())
