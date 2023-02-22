@@ -9,7 +9,8 @@ import Box2D
 PPM = 102.4
 FPS = 30
 
-MAX_FORCE = 2
+MAX_FORCE = 3
+MAX_TORQUE = 0.05  # scaled by arm length?
 MAX_SPEED = 100
 MAX_ANGULAR_SPEED = 100
 GRAVITY = -9.81
@@ -21,8 +22,17 @@ GROUND_DEF = Box2D.b2FixtureDef(shape=Box2D.b2PolygonShape(box=(2.5, 0.1)))
 class Drone2D(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": FPS}
 
-    def __init__(self, render_mode=None):
-        self.action_space = gym.spaces.Box(0, MAX_FORCE, (2, ), dtype=np.float32)
+    ACTION_FORCES = 0
+    ACTION_FORCE_AND_TORQUE = 1
+
+    def __init__(self, render_mode=None, action_type=ACTION_FORCES):
+        assert action_type == self.ACTION_FORCES or action_type == self.ACTION_FORCE_AND_TORQUE
+        self.action_type = action_type
+        if self.action_type == self.ACTION_FORCES:
+            self.action_space = gym.spaces.Box(np.array([0.0, 0.0]), np.array([1.0, 1.0]), dtype=np.float32)
+        elif self.action_type == self.ACTION_FORCE_AND_TORQUE:
+            self.action_space = gym.spaces.Box(np.array([0.0, -1.0]), np.array([1.0, 1.0]), dtype=np.float32)
+
         dims = np.array([2.5, 2.5, np.pi, np.pi, MAX_SPEED, MAX_SPEED, MAX_ANGULAR_SPEED, MAX_ANGULAR_SPEED]).astype(np.float32)
         self.observation_space = gym.spaces.Box(-dims, dims)
 
@@ -54,6 +64,15 @@ class Drone2D(gym.Env):
     def step(self, action):
         terminated = False
         reward = -100*((self.drone.position[0] - 2.5 - self.target[0]) ** 2 + (self.drone.position[1] - 0.25 - self.target[1]) ** 2)
+
+        action = np.array(action)
+        if self.action_type == self.ACTION_FORCES:
+            action *= MAX_FORCE
+        if self.action_type == self.ACTION_FORCE_AND_TORQUE:
+            total_force = action[0] * MAX_FORCE * 2
+            torque = action[1] * MAX_TORQUE
+            action[0] = (total_force + torque) / 2
+            action[1] = (total_force - torque) / 2
 
         self.drone.ApplyForce(force=self.drone.GetWorldVector([0., float(action[0])]), point=self.drone.GetWorldPoint([-0.2, 0.]), wake=True)
         self.drone.ApplyForce(force=self.drone.GetWorldVector([0., float(action[1])]), point=self.drone.GetWorldPoint([0.2, 0.]), wake=True)
@@ -132,10 +151,10 @@ def action_from_keyboard(keys):
     if keys[pygame.K_w]:
         action = [1.6, 1.6]
     if keys[pygame.K_a]:
-        action = [1.6, 1.61]
+        action = [1.6, 1.62]
     if keys[pygame.K_d]:
-        action = [1.61, 1.6]
-    return action
+        action = [1.62, 1.6]
+    return np.array(action) / MAX_FORCE
 
 
 class Joystick:
@@ -145,25 +164,22 @@ class Joystick:
         self.joystick.init()
 
     def get_action(self):
-        total = 10 * (self.joystick.get_axis(2) + 1) / 2
-        diff = 0.05 * self.joystick.get_axis(0)
-        return [(total + diff) / 2, (total - diff) / 2]
-
-    def get_action2(self):
-        left = 5 * (self.joystick.get_axis(2) + 1) / 2
-        right = 5 * (self.joystick.get_axis(1) + 1) / 2
-        return [left, right]
+        total = (self.joystick.get_axis(2) + 1) / 2
+        diff = self.joystick.get_axis(0)
+        return np.array([total, diff])
 
 
 def main():
     JOYSTICK = False
     KEYBOARD = True
 
-    env = Drone2D(render_mode="human")
-    obs, info = env.reset(seed=0)
-
     if JOYSTICK:
+        env = Drone2D(render_mode="human", action_type=Drone2D.ACTION_FORCE_AND_TORQUE)
         joystick = Joystick()
+    else:
+        env = Drone2D(render_mode="human", action_type=Drone2D.ACTION_FORCES)
+
+    obs, info = env.reset(seed=0)
 
     for _ in range(1000):
         action = [0, 0]
