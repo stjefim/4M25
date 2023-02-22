@@ -49,6 +49,7 @@ class Drone2D(gym.Env):
         self.world.CreateStaticBody(position=(2.5, 0.1), fixtures=GROUND_DEF)
         self.drone = self.world.CreateDynamicBody(position=(2.5, 0.25), fixtures=DRONE_DEF)
         self.target = np.array([1., 3.])
+        self.action = None
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -73,6 +74,8 @@ class Drone2D(gym.Env):
             torque = action[1] * MAX_TORQUE
             action[0] = (total_force + torque) / 2
             action[1] = (total_force - torque) / 2
+
+        self.action = action / MAX_FORCE
 
         self.drone.ApplyForce(force=self.drone.GetWorldVector([0., float(action[0])]), point=self.drone.GetWorldPoint([-0.2, 0.]), wake=True)
         self.drone.ApplyForce(force=self.drone.GetWorldVector([0., float(action[1])]), point=self.drone.GetWorldPoint([0.2, 0.]), wake=True)
@@ -113,6 +116,8 @@ class Drone2D(gym.Env):
         self.world.Step(self.TIME_STEP, 10, 10)
 
         pygame.draw.circle(canvas, (0, 200, 0), np.round(self._coord_transform(self.target + [2.5, 0.25])).astype(int), 10)
+        self._draw_force(canvas, [-0.205, 0], 0)
+        self._draw_force(canvas, [0.2, 0], 1)
 
         if self.render_mode == "human":
             self.window.blit(canvas, canvas.get_rect())
@@ -135,6 +140,7 @@ class Drone2D(gym.Env):
         return {}
 
     def _coord_transform(self, coords_physics):
+        coords_physics = np.array(coords_physics)
         result = coords_physics * PPM
         if result.shape == (2, ):
             result[1] = self.window_size - result[1]
@@ -144,6 +150,15 @@ class Drone2D(gym.Env):
 
     def _destroy(self):
         self.world.DestroyBody(self.drone)
+
+    def _draw_force(self, canvas, local_pos, action_index):
+        local_pos = np.array(local_pos)
+        start = np.round(self._coord_transform(self.drone.GetWorldPoint(local_pos))).astype(int)
+        end = np.round(self._coord_transform(self.drone.GetWorldPoint(local_pos + [0., 0.2]))).astype(int)
+        pygame.draw.line(canvas, (200, 200, 200), start, end, width=3)
+        if self.action is not None:
+            endf = np.round(self._coord_transform(self.drone.GetWorldPoint(local_pos + np.array([0., 0.2]) * self.action[action_index]))).astype(int)
+            pygame.draw.line(canvas, (0, 200, 0), start, endf, width=3)
 
 
 def action_from_keyboard(keys):
