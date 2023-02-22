@@ -5,7 +5,7 @@ import Box2D
 
 
 # pixels per meter
-# world is 5x5 meters, windows is 512x512 pixels
+# world is 5x5 meters, window is 512x512 pixels
 PPM = 102.4
 FPS = 30
 
@@ -51,7 +51,8 @@ class Drone2D(gym.Env):
         return self._get_obs(), self._get_info()
 
     def step(self, action):
-        reward = 10 - np.sqrt((self.drone.position[0] - 2.5 - 2) ** 2 + (self.drone.position[1] - 0.25 - 3) ** 2)
+        terminated = False
+        reward = -100*((self.drone.position[0] - 2.5 - 1) ** 2 + (self.drone.position[1] - 0.25 - 3) ** 2)
 
         self.drone.ApplyForce(force=self.drone.GetWorldVector([0., float(action[0])]), point=self.drone.GetWorldPoint([-0.2, 0.]), wake=True)
         self.drone.ApplyForce(force=self.drone.GetWorldVector([0., float(action[1])]), point=self.drone.GetWorldPoint([0.2, 0.]), wake=True)
@@ -59,10 +60,15 @@ class Drone2D(gym.Env):
         self.drone.ApplyTorque(-0.01 * self.drone.angularVelocity, wake=True)
         self.world.Step(self.TIME_STEP, 10, 10)
 
+        if self.drone.position[0] > 5 or self.drone.position[0] < 0 or self.drone.position[1] > 5 or \
+                self.drone.angle > np.pi / 2 or self.drone.angle < -np.pi / 2:
+            reward = -10000
+            terminated = True
+
         if self.render_mode == "human":
             self._render_frame()
 
-        return self._get_obs(), reward, False, False, self._get_info()
+        return self._get_obs(), reward, terminated, False, self._get_info()
 
     def render(self):
         if self.render_mode == "rgb_array":
@@ -143,7 +149,6 @@ class Joystick:
     def get_action2(self):
         left = 5 * (self.joystick.get_axis(2) + 1) / 2
         right = 5 * (self.joystick.get_axis(1) + 1) / 2
-
         return [left, right]
 
 
