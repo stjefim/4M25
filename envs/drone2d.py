@@ -5,11 +5,12 @@ import Box2D
 
 
 # pixels per meter
-# world is 5x5 meters, windows is 512x512 pixels
+# world is 5x5 meters, window is 512x512 pixels
 PPM = 102.4
 FPS = 30
 
-MAX_FORCE = 2
+MAX_FORCE = 3
+MAX_TORQUE = 0.05  # scaled by arm length?
 MAX_SPEED = 100
 MAX_ANGULAR_SPEED = 100
 GRAVITY = -9.81
@@ -21,8 +22,17 @@ GROUND_DEF = Box2D.b2FixtureDef(shape=Box2D.b2PolygonShape(box=(2.5, 0.1)))
 class Drone2D(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": FPS}
 
-    def __init__(self, render_mode=None):
-        self.action_space = gym.spaces.Box(0, MAX_FORCE, (2, ), dtype=np.float32)
+    ACTION_FORCES = 0
+    ACTION_FORCE_AND_TORQUE = 1
+
+    def __init__(self, render_mode=None, action_type=ACTION_FORCES):
+        assert action_type == self.ACTION_FORCES or action_type == self.ACTION_FORCE_AND_TORQUE
+        self.action_type = action_type
+        if self.action_type == self.ACTION_FORCES:
+            self.action_space = gym.spaces.Box(np.array([0.0, 0.0]), np.array([1.0, 1.0]), dtype=np.float32)
+        elif self.action_type == self.ACTION_FORCE_AND_TORQUE:
+            self.action_space = gym.spaces.Box(np.array([0.0, -1.0]), np.array([1.0, 1.0]), dtype=np.float32)
+
         dims = np.array([2.5, 2.5, np.pi, np.pi, MAX_SPEED, MAX_SPEED, MAX_ANGULAR_SPEED, MAX_ANGULAR_SPEED]).astype(np.float32)
         self.observation_space = gym.spaces.Box(-dims, dims)
 
@@ -38,6 +48,8 @@ class Drone2D(gym.Env):
         self.world = Box2D.b2World(gravity=(0, GRAVITY))
         self.world.CreateStaticBody(position=(2.5, 0.1), fixtures=GROUND_DEF)
         self.drone = self.world.CreateDynamicBody(position=(2.5, 0.25), fixtures=DRONE_DEF)
+        self.target = np.array([1., 3.])
+        self.action = None
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -51,17 +63,35 @@ class Drone2D(gym.Env):
         return self._get_obs(), self._get_info()
 
     def step(self, action):
-        reward = 10 - np.sqrt((self.drone.position[0] - 2.5 - 2) ** 2 + (self.drone.position[1] - 0.25 - 3) ** 2)
+        terminated = False
+        reward = -100*((self.drone.position[0] - 2.5 - self.target[0]) ** 2 + (self.drone.position[1] - 0.25 - self.target[1]) ** 2)
+
+        action = np.array(action)
+        if self.action_type == self.ACTION_FORCES:
+            action *= MAX_FORCE
+        if self.action_type == self.ACTION_FORCE_AND_TORQUE:
+            total_force = action[0] * MAX_FORCE * 2
+            torque = action[1] * MAX_TORQUE
+            action[0] = (total_force + torque) / 2
+            action[1] = (total_force - torque) / 2
+
+        self.action = action / MAX_FORCE
 
         self.drone.ApplyForce(force=self.drone.GetWorldVector([0., float(action[0])]), point=self.drone.GetWorldPoint([-0.2, 0.]), wake=True)
         self.drone.ApplyForce(force=self.drone.GetWorldVector([0., float(action[1])]), point=self.drone.GetWorldPoint([0.2, 0.]), wake=True)
-        self.drone.ApplyForceToCenter(force=-1 * np.sign(self.drone.linearVelocity) * np.square(self.drone.linearVelocity), wake=True)
+        self.drone.ApplyForceToCenter(force=-0.5 * np.sign(self.drone.linearVelocity) * np.square(self.drone.linearVelocity), wake=True)
+        self.drone.ApplyTorque(-0.01 * self.drone.angularVelocity, wake=True)
         self.world.Step(self.TIME_STEP, 10, 10)
+
+        if self.drone.position[0] > 5 or self.drone.position[0] < 0 or self.drone.position[1] > 5 or \
+                self.drone.angle > np.pi / 2 or self.drone.angle < -np.pi / 2:
+            reward = -10000
+            terminated = True
 
         if self.render_mode == "human":
             self._render_frame()
 
-        return self._get_obs(), reward, False, False, self._get_info()
+        return self._get_obs(), reward, terminated, False, self._get_info()
 
     def render(self):
         if self.render_mode == "rgb_array":
@@ -85,6 +115,10 @@ class Drone2D(gym.Env):
                 pygame.draw.polygon(canvas, (100, 100, 100), self._coord_transform(vertices))
         self.world.Step(self.TIME_STEP, 10, 10)
 
+        pygame.draw.circle(canvas, (0, 200, 0), np.round(self._coord_transform(self.target + [2.5, 0.25])).astype(int), 10)
+        self._draw_force(canvas, [-0.205, 0], 0)
+        self._draw_force(canvas, [0.2, 0], 1)
+
         if self.render_mode == "human":
             self.window.blit(canvas, canvas.get_rect())
             pygame.event.pump()
@@ -106,6 +140,7 @@ class Drone2D(gym.Env):
         return {}
 
     def _coord_transform(self, coords_physics):
+        coords_physics = np.array(coords_physics)
         result = coords_physics * PPM
         if result.shape == (2, ):
             result[1] = self.window_size - result[1]
@@ -116,31 +151,63 @@ class Drone2D(gym.Env):
     def _destroy(self):
         self.world.DestroyBody(self.drone)
 
+    def _draw_force(self, canvas, local_pos, action_index):
+        local_pos = np.array(local_pos)
+        start = np.round(self._coord_transform(self.drone.GetWorldPoint(local_pos))).astype(int)
+        end = np.round(self._coord_transform(self.drone.GetWorldPoint(local_pos + [0., 0.2]))).astype(int)
+        pygame.draw.line(canvas, (200, 200, 200), start, end, width=3)
+        if self.action is not None:
+            endf = np.round(self._coord_transform(self.drone.GetWorldPoint(local_pos + np.array([0., 0.2]) * self.action[action_index]))).astype(int)
+            pygame.draw.line(canvas, (0, 200, 0), start, endf, width=3)
+
 
 def action_from_keyboard(keys):
     action = [0, 0]
     if keys[pygame.K_w]:
         action = [1.6, 1.6]
     if keys[pygame.K_a]:
-        action = [1.6, 1.61]
+        action = [1.6, 1.62]
     if keys[pygame.K_d]:
-        action = [1.61, 1.6]
-    return action
+        action = [1.62, 1.6]
+    return np.array(action) / MAX_FORCE
+
+
+class Joystick:
+    def __init__(self):
+        pygame.joystick.init()
+        self.joystick = pygame.joystick.Joystick(0)
+        self.joystick.init()
+
+    def get_action(self):
+        total = (self.joystick.get_axis(2) + 1) / 2
+        diff = self.joystick.get_axis(0)
+        return np.array([total, diff])
 
 
 def main():
-    env = Drone2D(render_mode="human")
+    JOYSTICK = False
+    KEYBOARD = True
+
+    if JOYSTICK:
+        env = Drone2D(render_mode="human", action_type=Drone2D.ACTION_FORCE_AND_TORQUE)
+        joystick = Joystick()
+    else:
+        env = Drone2D(render_mode="human", action_type=Drone2D.ACTION_FORCES)
+
     obs, info = env.reset(seed=0)
 
     for _ in range(1000):
-        # action = [9.81*4*0.4*0.1, 9.81*4*0.4*0.1]
+        action = [0, 0]
         keys = pygame.key.get_pressed()
-        action = action_from_keyboard(keys)
+        if KEYBOARD:
+            action = action_from_keyboard(keys)
+        if JOYSTICK:
+            action = joystick.get_action()
 
         obs, reward, terminated, truncated, info = env.step(action)
 
         if terminated or truncated or keys[pygame.K_q]:
-             obs, info = env.reset()
+            obs, info = env.reset()
 
     env.close()
 
