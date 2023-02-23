@@ -2,7 +2,6 @@ import numpy as np
 import pygame
 import gymnasium as gym
 import Box2D
-import keyboard
 
 
 # pixels per meter
