@@ -2,6 +2,7 @@
 from pathlib import Path
 from datetime import datetime
 import logging
+import json
 
 # import gymnasium as gym
 from stable_baselines3 import PPO
@@ -64,8 +65,8 @@ def main():
     # Hyperparamaters
     n_envs, policy_args, training_args = get_parameters()
     logging.info(f"{n_envs=}")
-    logging.info(f"{policy_args}")
-    logging.info(f"{training_args}")
+    logging.info(f"policy_args={json.dumps(policy_args, indent=4)}")
+    logging.info(f"training_args={json.dumps(training_args, indent=4)}")
 
     # Training
     logging.info("Starting training")
