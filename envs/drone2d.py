@@ -65,6 +65,7 @@ class Drone2D(gym.Env):
     def step(self, action):
         terminated = False
         reward = -100*((self.drone.position[0] - 2.5 - self.target[0]) ** 2 + (self.drone.position[1] - 0.25 - self.target[1]) ** 2)
+        # reward = 1. / (0.1 + np.sqrt((self.drone.position[0] - 2.5 - self.target[0]) ** 2 + ( self.drone.position[1] - 0.25 - self.target[1]) ** 2))
 
         action = np.array(action)
         if self.action_type == self.ACTION_FORCES:
@@ -86,6 +87,7 @@ class Drone2D(gym.Env):
         if self.drone.position[0] > 5 or self.drone.position[0] < 0 or self.drone.position[1] > 5 or \
                 self.drone.angle > np.pi / 2 or self.drone.angle < -np.pi / 2:
             reward = -10000
+            # reward = -100
             terminated = True
 
         if self.render_mode == "human":
