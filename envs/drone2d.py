@@ -2,6 +2,7 @@ import numpy as np
 import pygame
 import gymnasium as gym
 import Box2D
+import random
 
 
 # pixels per meter
@@ -27,7 +28,7 @@ class Drone2D(gym.Env):
     ACTION_FORCES = 0
     ACTION_FORCE_AND_TORQUE = 1
 
-    def __init__(self, render_mode=None, action_type=ACTION_FORCES):
+    def __init__(self, reward_func, multiple_obj, render_mode=None, action_type=ACTION_FORCES):
         # Check that the specified action type is valid.
         assert action_type == self.ACTION_FORCES or action_type == self.ACTION_FORCE_AND_TORQUE
         self.action_type = action_type
@@ -58,10 +59,13 @@ class Drone2D(gym.Env):
         self.world = Box2D.b2World(gravity=(0, GRAVITY))
         self.world.CreateStaticBody(position=(2.5, 0.1), fixtures=GROUND_DEF)
         self.drone = self.world.CreateDynamicBody(position=(2.5, 0.25), fixtures=DRONE_DEF)
-        self.target = np.array([1., 3.]) # Target position
-        
+        self.target = np.array([1, 3]) # Target position # y-axis 0-4.75, x-axis -2.5-2.5
+
         # Initialise the action to None
         self.action = None
+
+        self.reward_func = reward_func
+        self.multiple_obj = multiple_obj
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -82,10 +86,13 @@ class Drone2D(gym.Env):
         # Initialize termination flag to False
         terminated = False
 
-        # ------------------------------ REWARD FUNCTION ------------------------------
-        reward = -100*((self.drone.position[0] - 2.5 - self.target[0]) ** 2 + (self.drone.position[1] - 0.25 - self.target[1]) ** 2)
-        # reward = 1. / (0.1 + np.sqrt((self.drone.position[0] - 2.5 - self.target[0]) ** 2 + ( self.drone.position[1] - 0.25 - self.target[1]) ** 2))
-        # -----------------------------------------------------------------------------
+        # Setup reward function
+        if self.reward_func:
+            reward = self.reward_func(self.drone.position, self.target)
+            if self.multiple_obj:
+                reward += 1 #/FPS 
+
+        else: raise ValueError("Reward function not specified")
 
         action = np.array(action)
         # Scale the action if the action type is forces
@@ -116,6 +123,18 @@ class Drone2D(gym.Env):
             reward = -10000
             # reward = -100
             terminated = True
+
+        
+        if self.multiple_obj:    
+            dist = np.sqrt((self.drone.position[0] - 2.5 - self.target[0]) ** 2 + ( self.drone.position[1] - 0.25 - self.target[1]) ** 2)
+            
+            # If the drone gets close to the target, we generate a new target and give reward
+            if dist < 0.5:
+                #print(self.target[0], self.target[1])
+                self.target[0] = random.uniform(-2.2, 2.2)
+                self.target[1] = random.uniform(1, 4.25)
+                #print(self.target[0], self.target[1])
+                reward += 100 # Need to regulate this better
 
         if self.render_mode == "human":
             self._render_frame()
@@ -250,7 +269,7 @@ def main():
         env = Drone2D(render_mode="human", action_type=Drone2D.ACTION_FORCE_AND_TORQUE)
         joystick = Joystick()
     else:
-        env = Drone2D(render_mode="human", action_type=Drone2D.ACTION_FORCES)
+        env = Drone2D(render_mode="human", action_type=Drone2D.ACTION_FORCES, reward_func=lambda *args: -100*((args[0][0] - 2.5 - args[1][0]) ** 2 + (args[0][1] - 0.25 - args[1][1]) ** 2))
 
     obs, info = env.reset(seed=0)
 
