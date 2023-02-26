@@ -26,7 +26,7 @@ def get_parameters():
     }
 
     training_args = {
-        "total_timesteps": 1_000,
+        "total_timesteps": 10_000_000,
         "progress_bar": True,
     }
 
