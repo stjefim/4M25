@@ -1,4 +1,3 @@
-
 from pathlib import Path
 from datetime import datetime
 import logging
@@ -35,10 +34,12 @@ def get_parameters():
 
 
 def train(save_path, policy_args, training_args, n_envs=8):
+    # Create a vectorized environment with the "Drone2D" environment
     env = make_vec_env("Drone2D", n_envs=n_envs)
 
+    # Create a PPO model with the provided policy arguments and the vectorized environment
     model = PPO("MlpPolicy", env, **policy_args)
-    model.learn(**training_args)
+    model.learn(**training_args) # train
 
     model.save(save_path / "model.zip")
     logging.info(f"Model saved to {save_path / 'model.zip'}")
@@ -78,8 +79,8 @@ def main():
     logging.info("Training finished")
     logging.info(f"Training duration: {datetime.now() - now}")
 
-    # Evaluating
-    # TODO: tweak the parameters here
+    # Evaluating train model
+    # TODO: tweak the parameters here 
     mean_reward, std_reward = evaluate_policy(model, model.get_env(), n_eval_episodes=10)
     logging.info(f"{mean_reward=}, {std_reward=}")
 
