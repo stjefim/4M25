@@ -24,7 +24,6 @@ dependencies:
     - ale-py==0.7.4
     - autorom==0.4.2
     - autorom-accept-rom-license==0.5.4
-    - box2d-py==2.3.5
     - cachetools==5.3.0
     - cffi==1.15.1
     - charset-normalizer==3.0.1
@@ -39,7 +38,6 @@ dependencies:
     - glfw==2.5.6
     - google-auth==2.16.0
     - google-auth-oauthlib==0.4.6
-    - grpcio==1.51.1
     - gym==0.21.0
     - gymnasium==0.27.1
     - gymnasium-notices==0.0.1
@@ -88,7 +86,6 @@ dependencies:
     - scipy==1.10.0
     - shimmy==0.2.0
     - six==1.16.0
-    - stable-baselines3==1.7.0
     - swig==4.1.1
     - tensorboard==2.12.0
     - tensorboard-data-server==0.7.0
