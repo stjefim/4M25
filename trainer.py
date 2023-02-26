@@ -6,13 +6,13 @@ import json
 # import gymnasium as gym
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.evaluation import evaluate_policy
+from stable_baselines3.common.callbacks import CheckpointCallback
 
 import envs.drone2d
 from video_logging import VideoRecorderCallback
 
 
-def get_parameters():
+def get_parameters(save_path):
     n_envs = 8
 
     # TODO: maybe move this to argparse instead
@@ -27,11 +27,7 @@ def get_parameters():
     }
 
     training_args = {
-<<<<<<< HEAD
-        "total_timesteps": 100_000,
-=======
-        "total_timesteps": 10_000_000,
->>>>>>> 636dfadab2c764eb0c79605fcc14fca7712031d8
+        "total_timesteps": 20_000,
         "progress_bar": True,
     }
 
@@ -40,35 +36,35 @@ def get_parameters():
         "save_frequency": training_args["total_timesteps"] // 10,
     }
 
+    checkpointing_args = {
+        "save_freq": max((training_args["total_timesteps"] // 10) // n_envs, 1),
+        "save_path": save_path / "models",
+        "name_prefix": "model",
+        "save_replay_buffer": True,
+        "save_vecnormalize": False, # adjust if VecNormalize is used
+    }
+
     return {
         "n_envs": n_envs,
         "policy_args": policy_args,
         "training_args": training_args,
         "video_recording_args": video_recording_args,
+        "checkpointing_args": checkpointing_args,
     }
 
 
-<<<<<<< HEAD
 def train_model(args, save_path):
     env = make_vec_env("Drone2D", n_envs=args["n_envs"])
 
     model = PPO("MlpPolicy", env, tensorboard_log=save_path, **args["policy_args"])
 
-    callback = None
+    # Save a checkpoint every 1000 steps
+    callback = [CheckpointCallback(**args["checkpointing_args"])]
     if args["video_recording_args"]["save_video"]:
         callback = VideoRecorderCallback(env, render_freq=args["video_recording_args"]["save_frequency"])
     model.learn(callback=callback, **args["training_args"])
-=======
-def train(save_path, policy_args, training_args, n_envs=8):
-    # Create a vectorized environment with the "Drone2D" environment
-    env = make_vec_env("Drone2D", n_envs=n_envs)
 
-    # Create a PPO model with the provided policy arguments and the vectorized environment
-    model = PPO("MlpPolicy", env, **policy_args)
-    model.learn(**training_args) # train
->>>>>>> 636dfadab2c764eb0c79605fcc14fca7712031d8
-
-    model.save(save_path / "model.zip")
+    model.save(save_path / "models" / "final_model.zip")
     logging.info(f"Model saved to {save_path / 'model.zip'}")
 
     return model
@@ -76,7 +72,7 @@ def train(save_path, policy_args, training_args, n_envs=8):
 
 def trainer(save_path):
     # Hyperparamaters
-    args = get_parameters()
+    args = get_parameters(save_path=save_path)
     logging.info(f"n_envs={args['n_envs']}")
     logging.info(f"policy_args={json.dumps(args['policy_args'], indent=4)}")
     logging.info(f"training_args={json.dumps(args['training_args'], indent=4)}")
@@ -87,6 +83,8 @@ def trainer(save_path):
     model = train_model(args=args, save_path=save_path)
     logging.info("Training finished")
     logging.info(f"Training duration: {datetime.now() - now}")
+
+    return model
 
 
 def main():
@@ -105,30 +103,7 @@ def main():
         ]
     )
 
-<<<<<<< HEAD
-    trainer(save_path=save_path)
-=======
-    # Hyperparamaters
-    n_envs, policy_args, training_args = get_parameters()
-    logging.info(f"{n_envs=}")
-    logging.info(f"policy_args={json.dumps(policy_args, indent=4)}")
-    logging.info(f"training_args={json.dumps(training_args, indent=4)}")
-
-    # Training
-    logging.info("Starting training")
-    now = datetime.now()
-    model = train(
-        n_envs=n_envs, policy_args=policy_args,
-        training_args=training_args, save_path=save_path,
-    )
-    logging.info("Training finished")
-    logging.info(f"Training duration: {datetime.now() - now}")
-
-    # Evaluating train model
-    # TODO: tweak the parameters here 
-    mean_reward, std_reward = evaluate_policy(model, model.get_env(), n_eval_episodes=10)
-    logging.info(f"{mean_reward=}, {std_reward=}")
->>>>>>> 636dfadab2c764eb0c79605fcc14fca7712031d8
+    model = trainer(save_path=save_path)
 
 
 if __name__ == "__main__":
