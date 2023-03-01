@@ -40,8 +40,9 @@ class Drone2D(gym.Env):
             self.action_space = gym.spaces.Box(np.array([0.0, -1.0]), np.array([1.0, 1.0]), dtype=np.float32)
 
         # Define the observation space for the environment based on the maximum values of each observation variable.
-        dims = np.array([2.5, 2.5, np.pi, np.pi, MAX_SPEED, MAX_SPEED, MAX_ANGULAR_SPEED, MAX_ANGULAR_SPEED]).astype(np.float32)
-        self.observation_space = gym.spaces.Box(-dims, dims)
+        dims_min = np.array([-2.5, -0.25, np.pi, np.pi, -MAX_SPEED, -MAX_SPEED, -MAX_ANGULAR_SPEED, -MAX_ANGULAR_SPEED, -2.2, 1]).astype(np.float32)
+        dims_max = np.array([2.5, 4.75, np.pi, np.pi, MAX_SPEED, MAX_SPEED, MAX_ANGULAR_SPEED, MAX_ANGULAR_SPEED, 2.2, 4.25]).astype(np.float32) # Add target position for sequential targets, for now they're hard coded
+        self.observation_space = gym.spaces.Box(-dims_min, dims_max)
 
         # Set the size of the rendering window and calculate the time step based on the render FPS.
         self.window_size = 512
@@ -195,7 +196,7 @@ class Drone2D(gym.Env):
     def _get_obs(self):
         # Return observation vector containing drone position, angle, linear and angular velocities
         return np.array([self.drone.position[0] - 2.5, self.drone.position[1] - 0.25, self.drone.angle, 0,
-                         self.drone.linearVelocity[0], self.drone.linearVelocity[1], self.drone.angularVelocity, 0]).astype(np.float32)
+                         self.drone.linearVelocity[0], self.drone.linearVelocity[1], self.drone.angularVelocity, 0, self.target[0], self.target[1]]).astype(np.float32) # Add target position
 
     def _get_info(self):
         # Return empty dictionary as the "info" dictionary is not used in this environment
@@ -266,10 +267,10 @@ def main():
     KEYBOARD = True
 
     if JOYSTICK:
-        env = Drone2D(render_mode="human", action_type=Drone2D.ACTION_FORCE_AND_TORQUE)
+        env = Drone2D(render_mode="human", action_type=Drone2D.ACTION_FORCE_AND_TORQUE, reward_func=lambda *args: -100*((args[0][0] - 2.5 - args[1][0]) ** 2 + (args[0][1] - 0.25 - args[1][1]) ** 2), multiple_obj=True)
         joystick = Joystick()
     else:
-        env = Drone2D(render_mode="human", action_type=Drone2D.ACTION_FORCES, reward_func=lambda *args: -100*((args[0][0] - 2.5 - args[1][0]) ** 2 + (args[0][1] - 0.25 - args[1][1]) ** 2))
+        env = Drone2D(render_mode="human", action_type=Drone2D.ACTION_FORCES, reward_func=lambda *args: -100*((args[0][0] - 2.5 - args[1][0]) ** 2 + (args[0][1] - 0.25 - args[1][1]) ** 2), multiple_obj=True)
 
     obs, info = env.reset(seed=0)
 
