@@ -9,7 +9,7 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import CheckpointCallback
 
 import envs.drone2d
-from video_logging import VideoRecorderCallback
+from gif_logging import GifRecorderCallback
 
 
 def get_parameters(save_path):
@@ -27,13 +27,13 @@ def get_parameters(save_path):
     }
 
     training_args = {
-        "total_timesteps": 20_000,
+        "total_timesteps": 100_000,
         "progress_bar": True,
     }
 
-    video_recording_args = {
-        "save_video": False,
-        "save_frequency": training_args["total_timesteps"] // 10,
+    gif_recording_args = {
+        "save_gif": False,
+        "save_freq": training_args["total_timesteps"] // 10,
     }
 
     checkpointing_args = {
@@ -48,7 +48,7 @@ def get_parameters(save_path):
         "n_envs": n_envs,
         "policy_args": policy_args,
         "training_args": training_args,
-        "video_recording_args": video_recording_args,
+        "gif_recording_args": gif_recording_args,
         "checkpointing_args": checkpointing_args,
     }
 
@@ -58,10 +58,12 @@ def train_model(args, save_path):
 
     model = PPO("MlpPolicy", env, tensorboard_log=save_path, **args["policy_args"])
 
-    # Save a checkpoint every 1000 steps
+    # Save checkpoints
     callback = [CheckpointCallback(**args["checkpointing_args"])]
-    if args["video_recording_args"]["save_video"]:
-        callback = VideoRecorderCallback(env, render_freq=args["video_recording_args"]["save_frequency"])
+    if args["gif_recording_args"]["save_gif"]:
+        callback.append(
+            GifRecorderCallback(env, save_path=save_path, render_freq=args["gif_recording_args"]["save_freq"])
+        )
     model.learn(callback=callback, **args["training_args"])
 
     model.save(save_path / "models" / "final_model.zip")
@@ -92,6 +94,7 @@ def main():
     keyword = "baseline"
     save_path = Path("logs") / f"{keyword}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}"
     save_path.mkdir()
+    (save_path / "gifs").mkdir()
 
     # Logging
     logging.basicConfig(
