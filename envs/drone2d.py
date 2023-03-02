@@ -35,14 +35,14 @@ class Drone2D(gym.Env):
 
         # Define the action space for the environment based on the selected action type.
         if self.action_type == self.ACTION_FORCES:
-            self.action_space = gym.spaces.Box(np.array([0.0, 0.0]), np.array([1.0, 1.0]), dtype=np.float32)
+            self.action_space = gym.spaces.Box(np.array([0.0, 0.0]), np.array([1.0, 1.0]))
         elif self.action_type == self.ACTION_FORCE_AND_TORQUE:
-            self.action_space = gym.spaces.Box(np.array([0.0, -1.0]), np.array([1.0, 1.0]), dtype=np.float32)
+            self.action_space = gym.spaces.Box(np.array([0.0, -1.0]), np.array([1.0, 1.0]))
 
         # Define the observation space for the environment based on the maximum values of each observation variable.
-        dims_min = np.array([-2.5, -0.25, np.pi, np.pi, -MAX_SPEED, -MAX_SPEED, -MAX_ANGULAR_SPEED, -MAX_ANGULAR_SPEED, -2.2, 1]).astype(np.float32)
-        dims_max = np.array([2.5, 4.75, np.pi, np.pi, MAX_SPEED, MAX_SPEED, MAX_ANGULAR_SPEED, MAX_ANGULAR_SPEED, 2.2, 4.25]).astype(np.float32) # Add target position for sequential targets, for now they're hard coded
-        self.observation_space = gym.spaces.Box(-dims_min, dims_max)
+        dims_min = np.array([-2.5, -0.25, -np.pi, -np.pi, -MAX_SPEED, -MAX_SPEED, -MAX_ANGULAR_SPEED, -MAX_ANGULAR_SPEED, -2.2, 1])
+        dims_max = np.array([2.5, 4.75, np.pi, np.pi, MAX_SPEED, MAX_SPEED, MAX_ANGULAR_SPEED, MAX_ANGULAR_SPEED, 2.2, 4.25])
+        self.observation_space = gym.spaces.Box(dims_min, dims_max)
 
         # Set the size of the rendering window and calculate the time step based on the render FPS.
         self.window_size = 512
