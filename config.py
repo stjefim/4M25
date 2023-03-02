@@ -40,8 +40,8 @@ def Config(save_path):
     env_kwargs = {
         "render_mode": None,
         "action_type": 1,  # ACTION_FORCES in drone2d
-        "multiple_obj": False,
-        "reward_func": reward_funcs.PlusOnePole(),
+        "multiple_obj": True,
+        "reward_func": reward_funcs.InverseDistance(),
         "initial_target_pos": [-1, 3]
     }
     
