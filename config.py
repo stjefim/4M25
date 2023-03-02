@@ -1,7 +1,8 @@
 from pathlib import Path
 from datetime import datetime
 
-import numpy as np
+import reward_funcs
+
 
 def Config(save_path):
     n_envs = 8
@@ -37,15 +38,10 @@ def Config(save_path):
 
     env_kwargs = {
         "render_mode": None,
-        "action_type": 1, # ACTION_FORCES in drone2d
-        "multiple_obj": True,
-        "reward_func": lambda *args: -100*((args[0][0] - 2.5 - args[1][0]) ** 2 + (args[0][1] - 0.25 - args[1][1]) ** 2), # args[0] == drone position, args[1] == target position
-        
-        # ------------------------------ REWARD FUNCTIONS ------------------------------
-        # reward = -np.exp((self.drone.position[0] - 2.5 - self.target[0]) ** 2 + (self.drone.position[1] - 0.25 - self.target[1]) ** 2) # exponential does not work
-        # reward = -100*((self.drone.position[0] - 2.5 - self.target[0]) ** 2 + (self.drone.position[1] - 0.25 - self.target[1]) ** 2)
-        # "reward_func": lambda *args: 1. / (0.1 + np.sqrt((self.drone.position[0] - 2.5 - self.target[0]) ** 2 + ( self.drone.position[1] - 0.25 - self.target[1]) ** 2)) # Best?
-        # -----------------------------------------------------------------------------
+        "action_type": 1,  # ACTION_FORCES in drone2d
+        "multiple_obj": False,
+        "reward_func": reward_funcs.InverseDistance(),
+        "initial_target_pos": [-1, 3]
     }
     
     return {
@@ -57,7 +53,9 @@ def Config(save_path):
         "env_kwargs": env_kwargs,
     }
 
-keyword = "baseline"
+
+keyword = "test"
 save_path = Path("logs") / f"{keyword}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}"
 save_path.mkdir()
+(save_path / "gifs").mkdir()
 config = Config(save_path=save_path)

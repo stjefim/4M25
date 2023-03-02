@@ -9,10 +9,10 @@ from envs.drone2d import Drone2D
 from config import config
 
 
-def render_drone(save_path, simulation_length=1000):
+def render_drone(save_path, config, simulation_length=1000):
     model = PPO.load(save_path / "models" / "final_model.zip")
     
-    env = gym.make("Drone2D", render_mode="rgb_array", action_type=Drone2D.ACTION_FORCE_AND_TORQUE, reward_func=config["env_kwargs"]["reward_func"], multiple_obj=config["env_kwargs"]["multiple_obj"])
+    env = gym.make("Drone2D", render_mode="rgb_array", action_type=Drone2D.ACTION_FORCE_AND_TORQUE, reward_func=config["env_kwargs"]["reward_func"], multiple_obj=config["env_kwargs"]["multiple_obj"], initial_target_pos=config["env_kwargs"]["initial_target_pos"])
     obs, info = env.reset(seed=0)
 
     images = [env.render()]
@@ -29,8 +29,6 @@ def render_drone(save_path, simulation_length=1000):
     
     env.close()
 
-    print(images[0].shape)
-
     imageio.mimsave(
         save_path / "rendered_drone.gif",
         [np.array(img) for i, img in enumerate(images) if i%2 == 0],
@@ -43,9 +41,9 @@ def render_drone(save_path, simulation_length=1000):
 def main():
     from pathlib import Path
 
-    save_path = Path("logs/baseline_2023_02_26_16_40_42")
+    save_path = Path("logs/test_2023_03_02_16_50_09")
     
-    rewards = render_drone(save_path=save_path, simulation_length=1000)
+    rewards = render_drone(save_path=save_path, simulation_length=1000, config=config)
     print(rewards)
 
 

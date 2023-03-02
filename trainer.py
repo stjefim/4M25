@@ -9,9 +9,7 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import CheckpointCallback
 
 import envs.drone2d
-
 from gif_logging import GifRecorderCallback
-from config import config
 
 
 def train_model(config, save_path):
@@ -32,7 +30,7 @@ def train_model(config, save_path):
     return model
 
 
-def trainer(save_path):
+def trainer(save_path, config):
     # Hyperparamaters
     logging.info(f"n_envs={config['n_envs']}")
     logging.info(f"policy_args={json.dumps(config['policy_args'], indent=4)}")
