@@ -58,8 +58,8 @@ class Drone2D(gym.Env):
 
         # Create the Box2D world, ground body, drone body, and target position.
         self.world = Box2D.b2World(gravity=(0, GRAVITY))
-        self.world.CreateStaticBody(position=(2.5, 0.1), fixtures=GROUND_DEF)
-        self.drone = self.world.CreateDynamicBody(position=(2.5, 0.25), fixtures=DRONE_DEF)
+        self.world.CreateStaticBody(position=(0, -0.15), fixtures=GROUND_DEF)
+        self.drone = self.world.CreateDynamicBody(position=(0, 1), fixtures=DRONE_DEF)
         self.target = np.array([1, 3]) # Target position # y-axis 0-4.75, x-axis -2.5-2.5
 
         # Initialise the action to None
@@ -74,7 +74,7 @@ class Drone2D(gym.Env):
         # Destroy the previous drone instance
         self._destroy()
         # Create a new drone instance with a fixed position and fixtures defined by the DRONE_DEF constant
-        self.drone = self.world.CreateDynamicBody(position=(2.5, 0.25), fixtures=DRONE_DEF)
+        self.drone = self.world.CreateDynamicBody(position=(0, 1), fixtures=DRONE_DEF)
 
         # If the render mode is set to "human", render a frame
         if self.render_mode == "human":
@@ -119,15 +119,14 @@ class Drone2D(gym.Env):
         self.world.Step(self.TIME_STEP, 10, 10)
 
         # Check if the drone has gone out of bounds or crashed
-        if self.drone.position[0] > 5 or self.drone.position[0] < 0 or self.drone.position[1] > 5 or \
+        if self.drone.position[0] > 2.5 or self.drone.position[0] < -2.5 or self.drone.position[1] > 4.75 or \
                 self.drone.angle > np.pi / 2 or self.drone.angle < -np.pi / 2:
             reward = -10000
             # reward = -100
             terminated = True
 
-        
         if self.multiple_obj:    
-            dist = np.sqrt((self.drone.position[0] - 2.5 - self.target[0]) ** 2 + ( self.drone.position[1] - 0.25 - self.target[1]) ** 2)
+            dist = np.sqrt((self.drone.position[0] - self.target[0]) ** 2 + (self.drone.position[1] - self.target[1]) ** 2)
             
             # If the drone gets close to the target, we generate a new target and give reward
             if dist < 0.5:
@@ -172,7 +171,7 @@ class Drone2D(gym.Env):
         self.world.Step(self.TIME_STEP, 10, 10)
 
         # Draw target circle and forces on canvas
-        pygame.draw.circle(canvas, (0, 200, 0), np.round(self._coord_transform(self.target + [2.5, 0.25])).astype(int), 10)
+        pygame.draw.circle(canvas, (0, 200, 0), np.round(self._coord_transform(self.target)).astype(int), 10)
         self._draw_force(canvas, [-0.205, 0], 0)
         self._draw_force(canvas, [0.2, 0], 1)
 
@@ -195,7 +194,7 @@ class Drone2D(gym.Env):
 
     def _get_obs(self):
         # Return observation vector containing drone position, angle, linear and angular velocities
-        return np.array([self.drone.position[0] - 2.5, self.drone.position[1] - 0.25, self.drone.angle, 0,
+        return np.array([self.drone.position[0], self.drone.position[1], self.drone.angle, 0,
                          self.drone.linearVelocity[0], self.drone.linearVelocity[1], self.drone.angularVelocity, 0, self.target[0], self.target[1]]).astype(np.float32) # Add target position
 
     def _get_info(self):
@@ -205,6 +204,7 @@ class Drone2D(gym.Env):
     def _coord_transform(self, coords_physics):
         # Convert physics coordinates to pixel coordinates using pixels per meter (PPM) conversion factor
         coords_physics = np.array(coords_physics)
+        coords_physics = coords_physics + [2.5, 0.25]
         result = coords_physics * PPM
 
         # If result is a single point, transform its y-coordinate to account for Pygame coordinate system
@@ -267,10 +267,10 @@ def main():
     KEYBOARD = True
 
     if JOYSTICK:
-        env = Drone2D(render_mode="human", action_type=Drone2D.ACTION_FORCE_AND_TORQUE, reward_func=lambda *args: -100*((args[0][0] - 2.5 - args[1][0]) ** 2 + (args[0][1] - 0.25 - args[1][1]) ** 2), multiple_obj=True)
+        env = Drone2D(render_mode="human", action_type=Drone2D.ACTION_FORCE_AND_TORQUE, reward_func=lambda *args: -100*((args[0][0] - args[1][0]) ** 2 + (args[0][1] - args[1][1]) ** 2), multiple_obj=True)
         joystick = Joystick()
     else:
-        env = Drone2D(render_mode="human", action_type=Drone2D.ACTION_FORCES, reward_func=lambda *args: -100*((args[0][0] - 2.5 - args[1][0]) ** 2 + (args[0][1] - 0.25 - args[1][1]) ** 2), multiple_obj=True)
+        env = Drone2D(render_mode="human", action_type=Drone2D.ACTION_FORCES, reward_func=lambda *args: -100*((args[0][0] - args[1][0]) ** 2 + (args[0][1] - args[1][1]) ** 2), multiple_obj=True)
 
     obs, info = env.reset(seed=0)
 
