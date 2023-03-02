@@ -31,8 +31,8 @@ def trainer(save_path, config):
     logging.info(f"n_envs={config['n_envs']}")
     logging.info(f"policy_args={json.dumps(config['policy_args'], indent=4)}")
     logging.info(f"training_args={json.dumps(config['training_args'], indent=4)}")
-    logging.info(f"checkpointing_args={json.dumps(config['checkpointing_args'], indent=4)}")
-    logging.info(f"env_kwargs={json.dumps(config['env_kwargs'], indent=4)}")
+    logging.info(f"checkpointing_args={config['checkpointing_args']}")
+    logging.info(f"env_kwargs={config['env_kwargs']}")
 
     # Training
     logging.info("Starting training")
