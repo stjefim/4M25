@@ -5,14 +5,16 @@ import gymnasium as gym
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import VecVideoRecorder, DummyVecEnv
 
-from envs.drone2d import Drone2D
-from config import config
+import envs
+from config import Config
 
 
-def render_drone(save_path, config, simulation_length=1000):
-    model = PPO.load(save_path / "models" / "final_model.zip")
+def render_drone(model_path, config, simulation_length=1000):
+    save_path = model_path.parent.parent / "gifs"
+
+    model = PPO.load(model_path)
     
-    env = gym.make("Drone2D", render_mode="rgb_array", action_type=Drone2D.ACTION_FORCE_AND_TORQUE, reward_func=config["env_kwargs"]["reward_func"], multiple_obj=config["env_kwargs"]["multiple_obj"], initial_target_pos=config["env_kwargs"]["initial_target_pos"])
+    env = gym.make("Drone2D", **{ **config["env_kwargs"], **{ "render_mode": "rgb_array", } })
     obs, info = env.reset(seed=0)
 
     images = [env.render()]
@@ -30,8 +32,8 @@ def render_drone(save_path, config, simulation_length=1000):
     env.close()
 
     imageio.mimsave(
-        save_path / "rendered_drone.gif",
-        [np.array(img) for i, img in enumerate(images) if i%2 == 0],
+        save_path / f"rendered_{model_path.stem}.gif",
+        [np.array(img) for i, img in enumerate(images) if i % 2 == 0],
         fps=env.metadata["render_fps"],
     )
 
@@ -41,11 +43,14 @@ def render_drone(save_path, config, simulation_length=1000):
 def main():
     from pathlib import Path
 
-    save_path = Path("logs/test_2023_03_02_16_50_09")
-    
-    rewards = render_drone(save_path=save_path, simulation_length=1000, config=config)
-    print(rewards)
+    save_path = Path("logs/killing_it_multi_2023_03_02_17_34_15")
+    config = Config(save_path=save_path)
 
+    print("Rendering")
+    model_paths = [folder for folder in (save_path / "models").iterdir()]
+    for model_path in model_paths:
+        print(model_path)
+        rewards = render_drone(model_path=model_path, simulation_length=1000, config=config)
 
 
 if __name__ == "__main__":

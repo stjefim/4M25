@@ -19,13 +19,8 @@ def Config(save_path):
     }
 
     training_args = {
-        "total_timesteps": 100_000,
+        "total_timesteps": 1_000_000,
         "progress_bar": True,
-    }
-
-    gif_recording_args = {
-        "save_gif": False,
-        "save_freq": training_args["total_timesteps"] // 10,
     }
 
     checkpointing_args = {
@@ -39,23 +34,15 @@ def Config(save_path):
     env_kwargs = {
         "render_mode": None,
         "action_type": 1,  # ACTION_FORCES in drone2d
-        "multiple_obj": False,
+        "multiple_obj": True,
         "reward_func": reward_funcs.InverseDistance(),
-        "initial_target_pos": [-1, 3]
+        "initial_target_pos": None
     }
     
     return {
         "n_envs": n_envs,
         "policy_args": policy_args,
         "training_args": training_args,
-        "gif_recording_args": gif_recording_args,
         "checkpointing_args": checkpointing_args,
         "env_kwargs": env_kwargs,
     }
-
-
-keyword = "test"
-save_path = Path("logs") / f"{keyword}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}"
-save_path.mkdir()
-(save_path / "gifs").mkdir()
-config = Config(save_path=save_path)
