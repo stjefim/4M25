@@ -1,4 +1,3 @@
-
 import imageio
 import numpy as np
 
@@ -7,12 +6,13 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import VecVideoRecorder, DummyVecEnv
 
 from envs.drone2d import Drone2D
+from config import config
 
 
 def render_drone(save_path, simulation_length=1000):
     model = PPO.load(save_path / "models" / "final_model.zip")
     
-    env = gym.make("Drone2D", render_mode="rgb_array", action_type=Drone2D.ACTION_FORCE_AND_TORQUE)
+    env = gym.make("Drone2D", render_mode="rgb_array", action_type=Drone2D.ACTION_FORCE_AND_TORQUE, reward_func=config["env_kwargs"]["reward_func"], multiple_obj=config["env_kwargs"]["multiple_obj"])
     obs, info = env.reset(seed=0)
 
     images = [env.render()]
