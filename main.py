@@ -9,15 +9,10 @@ from stable_baselines3.common.evaluation import evaluate_policy
 from envs.drone2d import Drone2D
 from trainer import trainer
 from evaluator import render_drone
+from config import config, save_path
 
 
 def main():
-    # Save path
-    keyword = "cancel_gravity"
-    save_path = Path("logs") / f"{keyword}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}"
-    save_path.mkdir()
-    (save_path / "gifs").mkdir()
-
     # Logging
     logging.basicConfig(
         level=logging.INFO,
@@ -28,13 +23,13 @@ def main():
         ]
     )
 
-    model = trainer(save_path=save_path)
+    model = trainer(save_path=save_path, config=config)
 
     # Render video
-    rewards = render_drone(save_path=save_path, simulation_length=1000)
+    rewards = render_drone(save_path=save_path, simulation_length=1000, config=config)
 
     # Evaluating train model
-    # TODO: tweak the parameters here 
+    # TODO: tweak the parameters here
     mean_reward, std_reward = evaluate_policy(model, model.get_env(), n_eval_episodes=10)
     logging.info(f"{mean_reward=}, {std_reward=}")
 
