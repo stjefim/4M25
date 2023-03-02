@@ -10,8 +10,8 @@ def _calc_distance(observation, target):
 
 
 def _check_terminate(observation):
-    if observation[0] > 2.5 or observation[0] < -2.5 or observation[1] > 4.75 or \
-            observation[2] > np.pi / 2 or observation[2] < -np.pi / 2:
+    if observation[0] > 2.5 or observation[0] < -2.5 or observation[1] > 4.75 or observation[2] > np.pi / 2\
+            or observation[2] < -np.pi / 2 or observation[3] > np.pi / 4 or observation[3] < -np.pi / 4:
         return True
     return False
 
@@ -47,6 +47,17 @@ class ExpDistance:
         if _check_terminate(observation):
             return self.terminate_reward, True
         return -np.exp(_calc_distance(observation, target)), False
+
+
+class PlusOnePole:
+    def __init__(self, terminate_reward=-100):
+        self.terminate_reward = terminate_reward
+
+    def __call__(self, observation, target, *args, **kwargs):
+        if _check_terminate(observation):
+            return self.terminate_reward, True
+        return 1, False
+
 
 
 if __name__ == '__main__':

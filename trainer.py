@@ -13,7 +13,7 @@ from gif_logging import GifRecorderCallback
 
 
 def train_model(config, save_path):
-    env = make_vec_env("Drone2D", n_envs=config["n_envs"], env_kwargs=config["env_kwargs"])
+    env = make_vec_env(config["env_name"], n_envs=config["n_envs"], env_kwargs=config["env_kwargs"])
 
     model = PPO("MlpPolicy", env, tensorboard_log=save_path, **config["policy_args"])
 

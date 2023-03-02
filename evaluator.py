@@ -12,7 +12,7 @@ from config import config
 def render_drone(save_path, config, simulation_length=1000):
     model = PPO.load(save_path / "models" / "final_model.zip")
     
-    env = gym.make("Drone2D", render_mode="rgb_array", action_type=Drone2D.ACTION_FORCE_AND_TORQUE, reward_func=config["env_kwargs"]["reward_func"], multiple_obj=config["env_kwargs"]["multiple_obj"], initial_target_pos=config["env_kwargs"]["initial_target_pos"])
+    env = gym.make(config["env_name"], render_mode="rgb_array", action_type=Drone2D.ACTION_FORCE_AND_TORQUE, reward_func=config["env_kwargs"]["reward_func"], multiple_obj=config["env_kwargs"]["multiple_obj"], initial_target_pos=config["env_kwargs"]["initial_target_pos"])
     obs, info = env.reset(seed=0)
 
     images = [env.render()]
