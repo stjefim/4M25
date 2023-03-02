@@ -16,17 +16,21 @@ MAX_SPEED = 100
 MAX_ANGULAR_SPEED = 100
 GRAVITY = -9.81
 
-DRONE_DEF = Box2D.b2FixtureDef(density=4.0, friction=0.1, restitution=0.0, shape=Box2D.b2PolygonShape(box=(0.2, 0.05)))
+DRONE_DENSITY = 4.0
+DRONE_WH = np.array([0.4, 0.1])
+DRONE_DEF = Box2D.b2FixtureDef(density=DRONE_DENSITY, friction=0.1, restitution=0.0, shape=Box2D.b2PolygonShape(box=DRONE_WH / 2))
 GROUND_DEF = Box2D.b2FixtureDef(shape=Box2D.b2PolygonShape(box=(2.5, 0.1)))
 
 
 class Drone2D(gym.Env):
     # Define some metadata about the environment, including the available render modes and the FPS.
-    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": FPS}
+    metadata = { "render_modes": ["human", "rgb_array"], "render_fps": FPS }
 
     # Define some constants for the action types that this environment supports.
     ACTION_FORCES = 0
     ACTION_FORCE_AND_TORQUE = 1
+
+    SPAWN_POSITION = (0, 0)
 
     def __init__(self, reward_func, multiple_obj, render_mode=None, action_type=ACTION_FORCES):
         # Check that the specified action type is valid.
@@ -59,7 +63,7 @@ class Drone2D(gym.Env):
         # Create the Box2D world, ground body, drone body, and target position.
         self.world = Box2D.b2World(gravity=(0, GRAVITY))
         self.world.CreateStaticBody(position=(0, -0.15), fixtures=GROUND_DEF)
-        self.drone = self.world.CreateDynamicBody(position=(0, 1), fixtures=DRONE_DEF)
+        self.drone = self.world.CreateDynamicBody(position=self.SPAWN_POSITION, fixtures=DRONE_DEF)
         self.target = np.array([1, 3]) # Target position # y-axis 0-4.75, x-axis -2.5-2.5
 
         # Initialise the action to None
@@ -68,13 +72,14 @@ class Drone2D(gym.Env):
         self.reward_func = reward_func
         self.multiple_obj = multiple_obj
 
+
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
         # Destroy the previous drone instance
         self._destroy()
         # Create a new drone instance with a fixed position and fixtures defined by the DRONE_DEF constant
-        self.drone = self.world.CreateDynamicBody(position=(0, 1), fixtures=DRONE_DEF)
+        self.drone = self.world.CreateDynamicBody(position=self.SPAWN_POSITION, fixtures=DRONE_DEF)
 
         # If the render mode is set to "human", render a frame
         if self.render_mode == "human":
@@ -82,6 +87,7 @@ class Drone2D(gym.Env):
         
         # Returns the observation and info dictionaries
         return self._get_obs(), self._get_info()
+
 
     def step(self, action):
         # Initialize termination flag to False
@@ -107,7 +113,7 @@ class Drone2D(gym.Env):
             action[1] = (total_force - torque) / 2
 
         # Normalize the action and set it as the current action
-        self.action = action / MAX_FORCE
+        # self.action = action / MAX_FORCE
 
         # Apply forces and torques to the drone
         self.drone.ApplyForce(force=self.drone.GetWorldVector([0., float(action[0])]), point=self.drone.GetWorldPoint([-0.2, 0.]), wake=True)
@@ -247,6 +253,20 @@ def action_from_keyboard(keys):
         action = [1.6, 1.62]
     if keys[pygame.K_d]:
         action = [1.62, 1.6]
+    return np.array(action) / MAX_FORCE
+
+
+def action_from_keyboard_gravity_cancel(keys):
+    action = [-GRAVITY * np.prod(DRONE_WH) * DRONE_DENSITY, 0]
+    if keys[pygame.K_w]:
+        action = [-GRAVITY * 0.1594 + 0.1, 0]
+    if keys[pygame.K_s]:
+        action = [-GRAVITY * 0.1594 - 0.1, 0]
+    if keys[pygame.K_a]:
+        action = [-GRAVITY * 0.1594, -0.2]
+    if keys[pygame.K_d]:
+        action = [-GRAVITY * 0.1594, 0.2]
+
     return np.array(action) / MAX_FORCE
 
 

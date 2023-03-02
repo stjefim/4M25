@@ -18,7 +18,11 @@ def Config(save_path):
     }
 
     training_args = {
+<<<<<<< HEAD
         "total_timesteps": 100_000,
+=======
+        "total_timesteps": 20_000,
+>>>>>>> 165b0407dfc694c1275c6b0a812920c6b9c64339
         "progress_bar": True,
     }
 
