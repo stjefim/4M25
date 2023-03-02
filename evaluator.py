@@ -13,8 +13,8 @@ def render_drone(model_path, config, simulation_length=1000):
     save_path = model_path.parent.parent / "gifs"
 
     model = PPO.load(model_path)
-    
-    env = gym.make("Drone2D", **{ **config["env_kwargs"], **{ "render_mode": "rgb_array", } })
+
+    env = gym.make(config["env_name"], **{ **config["env_kwargs"], **{ "render_mode": "rgb_array", } })
     obs, info = env.reset(seed=0)
 
     images = [env.render()]
