@@ -113,7 +113,8 @@ class DronePole2D(gym.Env):
         self.drone = self.world.CreateDynamicBody(position=self.spawn_position, fixtures=DRONE_DEF)
         self.pole = self.world.CreateDynamicBody(position=self.spawn_position, fixtures=POLE_DEF)
         self.joint = self.world.CreateRevoluteJoint(bodyA=self.drone, bodyB=self.pole, anchor=self.spawn_position)
-        self.pole.ApplyForceToCenter(force=[0.05, 0], wake=True)
+
+        self.pole.ApplyForceToCenter(force=[random.uniform(-0.1, 0.1), 0], wake=True)
 
         # If the render mode is set to "human", render a frame
         if self.render_mode == "human":
