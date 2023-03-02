@@ -41,7 +41,7 @@ def Config(save_path):
     }
     
     return {
-        "env_name": "DronePole2D",
+        "env_name": env_name,
         "n_envs": n_envs,
         "policy_args": policy_args,
         "training_args": training_args,
