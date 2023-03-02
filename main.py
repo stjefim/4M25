@@ -16,6 +16,7 @@ def main():
     keyword = "test"
     save_path = Path("logs") / f"{keyword}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}"
     save_path.mkdir()
+    (save_path / "gifs").mkdir()
 
     # Logging
     logging.basicConfig(

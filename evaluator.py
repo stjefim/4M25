@@ -29,6 +29,8 @@ def render_drone(save_path, simulation_length=1000):
     
     env.close()
 
+    print(images[0].shape)
+
     imageio.mimsave(
         save_path / "rendered_drone.gif",
         [np.array(img) for i, img in enumerate(images) if i%2 == 0],
@@ -41,7 +43,7 @@ def render_drone(save_path, simulation_length=1000):
 def main():
     from pathlib import Path
 
-    save_path = Path("logs/baseline_2023_02_26_14_46_22")
+    save_path = Path("logs/baseline_2023_02_26_16_40_42")
     
     rewards = render_drone(save_path=save_path, simulation_length=1000)
     print(rewards)

@@ -9,7 +9,8 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import CheckpointCallback
 
 import envs.drone2d
-from video_logging import VideoRecorderCallback
+
+from gif_logging import GifRecorderCallback
 from config import config
 
 
@@ -20,13 +21,14 @@ def train_model(config, save_path):
 
     # Save a checkpoint every 1000 steps
     callback = [CheckpointCallback(**config["checkpointing_args"])]
-    if config["video_recording_args"]["save_video"]:
-        callback = VideoRecorderCallback(env, render_freq=config["video_recording_args"]["save_frequency"])
+    if args["gif_recording_args"]["save_gif"]:
+        callback.append(
+            GifRecorderCallback(env, save_path=save_path, render_freq=args["gif_recording_args"]["save_freq"])
+        )
     model.learn(callback=callback, **config["training_args"])
 
     model.save(save_path / "models" / "final_model.zip")
     logging.info(f"Model saved to {save_path / 'model.zip'}")
-
     return model
 
 
@@ -51,6 +53,7 @@ def main():
     keyword = "baseline"
     save_path = Path("logs") / f"{keyword}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}"
     save_path.mkdir()
+    (save_path / "gifs").mkdir()
 
     # Logging
     logging.basicConfig(
