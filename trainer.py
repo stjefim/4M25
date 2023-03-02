@@ -21,9 +21,9 @@ def train_model(config, save_path):
 
     # Save a checkpoint every 1000 steps
     callback = [CheckpointCallback(**config["checkpointing_args"])]
-    if args["gif_recording_args"]["save_gif"]:
+    if config["gif_recording_args"]["save_gif"]:
         callback.append(
-            GifRecorderCallback(env, save_path=save_path, render_freq=args["gif_recording_args"]["save_freq"])
+            GifRecorderCallback(env, save_path=save_path, render_freq=config["gif_recording_args"]["save_freq"])
         )
     model.learn(callback=callback, **config["training_args"])
 
