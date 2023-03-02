@@ -8,8 +8,8 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import CheckpointCallback
 
-import envs.drone2d
-from gif_logging import GifRecorderCallback
+import envs
+from config import Config
 
 
 def train_model(config, save_path):
@@ -19,10 +19,6 @@ def train_model(config, save_path):
 
     # Save a checkpoint every 1000 steps
     callback = [CheckpointCallback(**config["checkpointing_args"])]
-    if config["gif_recording_args"]["save_gif"]:
-        callback.append(
-            GifRecorderCallback(env, save_path=save_path, render_freq=config["gif_recording_args"]["save_freq"])
-        )
     model.learn(callback=callback, **config["training_args"])
 
     model.save(save_path / "models" / "final_model.zip")
@@ -35,6 +31,8 @@ def trainer(save_path, config):
     logging.info(f"n_envs={config['n_envs']}")
     logging.info(f"policy_args={json.dumps(config['policy_args'], indent=4)}")
     logging.info(f"training_args={json.dumps(config['training_args'], indent=4)}")
+    logging.info(f"checkpointing_args={config['checkpointing_args']}")
+    logging.info(f"env_kwargs={config['env_kwargs']}")
 
     # Training
     logging.info("Starting training")
@@ -47,11 +45,11 @@ def trainer(save_path, config):
 
 
 def main():
-    # Save path
-    keyword = "baseline"
+    keyword = "killing_it_multi"
     save_path = Path("logs") / f"{keyword}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}"
     save_path.mkdir()
     (save_path / "gifs").mkdir()
+    config = Config(save_path=save_path)
 
     # Logging
     logging.basicConfig(
@@ -63,7 +61,7 @@ def main():
         ]
     )
 
-    model = trainer(save_path=save_path)
+    model = trainer(save_path=save_path, config=config)
 
 
 if __name__ == "__main__":
