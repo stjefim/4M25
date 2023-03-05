@@ -15,15 +15,15 @@ def _check_terminate(observation):
 
 
 class MinusDistance:
-    """This is broken"""
-    def __init__(self, scale=10, terminate_reward=-100):
+    def __init__(self, scale=10, terminate_reward=-1000, offset=7):
         self.scale = scale
         self.terminate_reward = terminate_reward
+        self.offset = offset
 
     def __call__(self, observation, target, *args, **kwargs):
         if _check_terminate(observation):
             return self.terminate_reward, True
-        return -self.scale * _calc_distance(observation, target), False
+        return self.scale * (self.offset - _calc_distance(observation, target)), False
 
 
 class InverseDistance:
