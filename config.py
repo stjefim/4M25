@@ -6,7 +6,7 @@ import reward_funcs
 
 def Config(save_path):
     n_envs = 8
-    env_name = "DronePole2D"
+    env_name = "Drone2D"
 
     # TODO: maybe move this to argparse instead
     # TODO: add the other parameters
@@ -36,9 +36,10 @@ def Config(save_path):
         "render_mode": None,
         "action_type": 1,  # ACTION_FORCES in drone2d
         "multiple_obj": True,
-        "reward_func": reward_funcs.InverseDistance(),
+        "reward_func": reward_funcs.InverseDistance(epsilon=0.05),
         "initial_target_pos": None,
-        "relative_target": False,
+        "relative_target": True,
+        "spawn_position": (0, 1)
     }
     
     return {
