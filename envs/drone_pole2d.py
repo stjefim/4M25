@@ -36,7 +36,7 @@ POLE_DEF = Box2D.b2FixtureDef(density=POLE_DENSITY, friction=POLE_FRICTION, rest
 
 TARGET_MAX_X = 2
 TARGET_MAX_Y = 4
-TARGET_DISTANCE_THRESH = 0.5
+TARGET_DISTANCE_THRESH = 0.25
 
 LINEAR_DRAG_K = 0.5
 ROTATIONAL_DRAG_K = 0.02
@@ -146,6 +146,7 @@ class DronePole2D(gym.Env):
             distance = _calc_distance(self._get_obs(), self.target)
             if distance < TARGET_DISTANCE_THRESH:
                 self._generate_target_position()
+                reward += 100
 
         if self.render_mode == "human":
             self._render_frame()

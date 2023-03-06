@@ -6,7 +6,7 @@ import reward_funcs
 
 def Config(save_path):
     n_envs = 8
-    env_name = "Drone2D"
+    env_name = "DronePole2D"
 
     # TODO: maybe move this to argparse instead
     # TODO: add the other parameters
