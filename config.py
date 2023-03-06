@@ -37,7 +37,8 @@ def Config(save_path):
         "action_type": 1,  # ACTION_FORCES in drone2d
         "multiple_obj": True,
         "reward_func": reward_funcs.InverseDistance(),
-        "initial_target_pos": None
+        "initial_target_pos": None,
+        "relative_target": False,
     }
     
     return {
