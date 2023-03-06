@@ -11,16 +11,16 @@ WORLD_SIZE = 5.  # world size is 5 meters
 PPM = 512 / WORLD_SIZE
 FPS = 30
 
-MAX_FORCE = 3
-MAX_TORQUE = 0.05  # scaled by arm length?
-MAX_SPEED = 100
-MAX_ANGULAR_SPEED = 100
+MAX_FORCE = 8
+MAX_TORQUE = 0.3  # scaled by arm length?
+MAX_SPEED = 10
+MAX_ANGULAR_SPEED = 5
 GRAVITY = -9.81
 
-DRONE_DENSITY = 4.0
+DRONE_DENSITY = 23.
 DRONE_FRICTION = 0.1
 DRONE_RESTITUTION = 0.0
-DRONE_WH = np.array([0.4, 0.1])
+DRONE_WH = np.array([0.35, 0.075])
 # category bits and mask bits are used to make drone and pole collide with ground and not collide between each other
 DRONE_DEF = Box2D.b2FixtureDef(density=DRONE_DENSITY, friction=DRONE_FRICTION, restitution=DRONE_RESTITUTION,
                                shape=Box2D.b2PolygonShape(box=DRONE_WH / 2), categoryBits=0x0001, maskBits=0x0002)
@@ -30,7 +30,7 @@ GROUND_DEF = Box2D.b2FixtureDef(shape=Box2D.b2PolygonShape(box=(WORLD_SIZE / 2, 
 POLE_DENSITY = 4.0
 POLE_FRICTION = 0.1
 POLE_RESTITUTION = 0.0
-POLE_WH = np.array([0.05, 0.6])
+POLE_WH = np.array([0.05, 0.5])
 POLE_DEF = Box2D.b2FixtureDef(density=POLE_DENSITY, friction=POLE_FRICTION, restitution=POLE_RESTITUTION,
                               shape=Box2D.b2PolygonShape(box=(POLE_WH[0] / 2, POLE_WH[1] / 2, (0, POLE_WH[1] / 2), 0)), categoryBits=0x0001, maskBits=0x0002)
 
@@ -39,7 +39,7 @@ TARGET_MAX_Y = 4
 TARGET_DISTANCE_THRESH = 0.5
 
 LINEAR_DRAG_K = 0.5
-ROTATIONAL_DRAG_K = 0.01
+ROTATIONAL_DRAG_K = 0.02
 
 
 class DronePole2D(gym.Env):
@@ -134,7 +134,7 @@ class DronePole2D(gym.Env):
         # Apply drag
         self.drone.ApplyForceToCenter(
             force=-LINEAR_DRAG_K * np.sign(self.drone.linearVelocity) * np.square(self.drone.linearVelocity), wake=True)
-        self.drone.ApplyTorque(-ROTATIONAL_DRAG_K * self.drone.angularVelocity, wake=True)
+        self.drone.ApplyTorque(-ROTATIONAL_DRAG_K * np.sign(self.drone.angularVelocity) * np.square(self.drone.angularVelocity), wake=True)
 
         # Step the world forward in time
         self.world.Step(self.TIME_STEP, 10, 10)
@@ -179,8 +179,8 @@ class DronePole2D(gym.Env):
 
         # Draw target circle and forces on canvas
         pygame.draw.circle(canvas, (0, 200, 0), np.round(self._coord_transform(self.target)).astype(int), 10)
-        self._draw_force(canvas, [-0.205, 0], 0)
-        self._draw_force(canvas, [0.2, 0], 1)
+        self._draw_force(canvas, [-0.195, 0], 0)
+        self._draw_force(canvas, [0.185, 0], 1)
 
         # If render mode is "human", display the canvas on the Pygame window
         if self.render_mode == "human":
@@ -269,11 +269,11 @@ class DronePole2D(gym.Env):
 def action_from_keyboard(keys):
     action = [0, 0]
     if keys[pygame.K_w]:
-        action = [2.6, 2.6]
+        action = [5.0, 5.0]
     if keys[pygame.K_a]:
-        action = [2.6, 2.63]
+        action = [5.0, 5.1]
     if keys[pygame.K_d]:
-        action = [2.63, 2.6]
+        action = [5.1, 5.0]
     return np.array(action) / MAX_FORCE
 
 
