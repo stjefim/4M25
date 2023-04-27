@@ -1,12 +1,13 @@
 from pathlib import Path
 from datetime import datetime
 
-import reward_funcs
+import reward_funcs as reward_funcs
 
 
 def Config(save_path):
     n_envs = 8
-    env_name = "DronePole2D"
+    env_name = "DronePole2DRobust"
+    # env_name = "Drone2DRobust"
 
     # TODO: maybe move this to argparse instead
     # TODO: add the other parameters
@@ -20,7 +21,7 @@ def Config(save_path):
     }
 
     training_args = {
-        "total_timesteps": 1_000_000,
+        "total_timesteps": 2_000_000,
         "progress_bar": True,
     }
 
@@ -36,8 +37,10 @@ def Config(save_path):
         "render_mode": None,
         "action_type": 1,  # ACTION_FORCES in drone2d
         "multiple_obj": True,
-        "reward_func": reward_funcs.InverseDistance(),
-        "initial_target_pos": None
+        "reward_func": reward_funcs.InverseDistance(epsilon=0.05),
+        "initial_target_pos": None,
+        "relative_target": True,
+        "spawn_position": (0, 1)
     }
     
     return {

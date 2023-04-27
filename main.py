@@ -45,7 +45,7 @@ def main():
     # TODO: tweak the parameters here
     logging.info("Evaluating model")
     mean_reward, std_reward = evaluate_policy(model, model.get_env(), n_eval_episodes=10)
-    logging.info(f"{mean_reward=}, {std_reward=}")
+    logging.info(f"Mean reward: {mean_reward}, Std reward: {std_reward}")
     logging.info("Evaluation finished")
 
 

@@ -29,7 +29,7 @@ GROUND_DEF = Box2D.b2FixtureDef(shape=Box2D.b2PolygonShape(box=(WORLD_SIZE / 2, 
 
 TARGET_MAX_X = 2
 TARGET_MAX_Y = 4
-TARGET_DISTANCE_THRESH = 0.5
+TARGET_DISTANCE_THRESH = 0.25
 
 LINEAR_DRAG_K = 0.5
 ROTATIONAL_DRAG_K = 0.02
@@ -43,7 +43,7 @@ class Drone2D(gym.Env):
     ACTION_FORCES = 0
     ACTION_FORCE_AND_TORQUE = 1
 
-    def __init__(self, reward_func, multiple_obj=False, render_mode=None, action_type=ACTION_FORCES, spawn_position=(0, 0), initial_target_pos=None):
+    def __init__(self, reward_func, multiple_obj=False, render_mode=None, action_type=ACTION_FORCES, spawn_position=(0, 0), initial_target_pos=None, relative_target=False):
         # Check that the specified action type is valid.
         assert action_type == self.ACTION_FORCES or action_type == self.ACTION_FORCE_AND_TORQUE
         self.action_type = action_type
@@ -89,6 +89,7 @@ class Drone2D(gym.Env):
 
         self.reward_func = reward_func
         self.multiple_obj = multiple_obj
+        self.relative_target = relative_target
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -124,6 +125,7 @@ class Drone2D(gym.Env):
             distance = _calc_distance(self._get_obs(), self.target)
             if distance < TARGET_DISTANCE_THRESH:
                 self._generate_target_position()
+                reward += 100
 
         if self.render_mode == "human":
             self._render_frame()
@@ -180,8 +182,14 @@ class Drone2D(gym.Env):
 
     def _get_obs(self):
         # Return observation vector containing drone position, angle, linear and angular velocities
+        if self.relative_target:
+            target_x = self.target[0] - self.drone.position[0]
+            target_y = self.target[1] - self.drone.position[1]
+        else:
+            target_x = self.target[0]
+            target_y = self.target[1]
         return np.array([self.drone.position[0], self.drone.position[1], self.drone.angle, 0,
-                         self.drone.linearVelocity[0], self.drone.linearVelocity[1], self.drone.angularVelocity, 0, self.target[0], self.target[1]]).astype(np.float32)
+                         self.drone.linearVelocity[0], self.drone.linearVelocity[1], self.drone.angularVelocity, 0, target_x, target_y]).astype(np.float32)
 
     def _get_info(self):
         # Return empty dictionary as the "info" dictionary is not used in this environment

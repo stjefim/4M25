@@ -42,7 +42,11 @@ LINEAR_DRAG_K = 0.5
 ROTATIONAL_DRAG_K = 0.02
 
 
-class DronePole2D(gym.Env):
+TIME_BETWEEN_PUSHES = 50
+PERTURB_MULT = 5
+
+
+class DronePole2DRobust(gym.Env):
     # Define some metadata about the environment, including the available render modes and the FPS.
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": FPS}
 
@@ -105,6 +109,8 @@ class DronePole2D(gym.Env):
         self.multiple_obj = multiple_obj
         self.relative_target = relative_target
 
+        self.time_since_last_push = 0
+
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
@@ -115,11 +121,13 @@ class DronePole2D(gym.Env):
         self.pole = self.world.CreateDynamicBody(position=self.spawn_position, fixtures=POLE_DEF)
         self.joint = self.world.CreateRevoluteJoint(bodyA=self.drone, bodyB=self.pole, anchor=self.spawn_position)
 
-        self.pole.ApplyForceToCenter(force=[random.uniform(-0.1, 0.1), 0], wake=True)
+        self.drone.ApplyForceToCenter(force=[random.uniform(-0.1, 0.1), 0], wake=True)
 
         # If the render mode is set to "human", render a frame
         if self.render_mode == "human":
             self._render_frame()
+        
+        self.time_since_last_push = 0
 
         # Returns the observation and info dictionaries
         return self._get_obs(), self._get_info()
@@ -147,6 +155,14 @@ class DronePole2D(gym.Env):
             if distance < TARGET_DISTANCE_THRESH:
                 self._generate_target_position()
                 reward += 100
+
+        if self.time_since_last_push >= TIME_BETWEEN_PUSHES:
+            # print(self.drone.position)
+            self.drone.ApplyForceToCenter(force=[random.uniform(-1, 1) * PERTURB_MULT, random.uniform(-1, 1) * PERTURB_MULT], wake=True)
+
+            self.time_since_last_push = 0
+        
+        self.time_since_last_push += 1
 
         if self.render_mode == "human":
             self._render_frame()

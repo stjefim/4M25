@@ -11,7 +11,7 @@ def _calc_distance(observation, target):
 
 def _check_terminate(observation):
     return observation[0] > 2.5 or observation[0] < -2.5 or observation[1] > 4.75 or observation[2] > np.pi / 2\
-             or observation[2] < -np.pi / 2 or observation[3] > np.pi / 4 or observation[3] < -np.pi / 4
+             or observation[2] < -np.pi / 2 or observation[3] > np.pi / 4 or observation[3] < -np.pi / 4 or observation[1] <= 0.1
 
 
 class MinusDistance:
