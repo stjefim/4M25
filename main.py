@@ -13,7 +13,7 @@ from config import Config
 
 
 def main():
-    keyword = "killing_it_multi"
+    keyword = "hovering_with_pole_relative_target"
     save_path = Path("logs") / f"{keyword}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}"
     save_path.mkdir()
     (save_path / "gifs").mkdir()
